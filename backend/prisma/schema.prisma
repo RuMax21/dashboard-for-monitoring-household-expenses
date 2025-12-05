@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  role         UserRole @default(USER)
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  categories    Category[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  notifications Notification[]
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+
+  refreshToken String?
+  accessToken  String?
+  expiresAt    Int?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id    String  @id @default(cuid())
+  name  String
+  icon  String?
+  color String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createAt     DateTime      @default(now())
+  updateAt     DateTime      @updatedAt
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  categoryId  String?
+  type        TransactionType
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  date        DateTime        @default(now())
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model Budget {
+  id          String       @id @default(cuid())
+  userId      String
+  categoryId  String?
+  amountLimit Decimal      @db.Decimal(10, 2)
+  period      BudgetPeriod
+  startDate   DateTime     @default(now())
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  title   String
+  message String?
+  type    NotificationType @default(INFO)
+  isRead  Boolean          @default(false)
+
+  createAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
