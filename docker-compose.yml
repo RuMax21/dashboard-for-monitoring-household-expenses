@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: expense-dashboard-postgres
+    environment:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
+      POSTGRES_HOST_AUTH_METHOD:
+    ports:
+      - "5432:5432"
+    volumes:
+     - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: expense-dashboard-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
+    volumes:
+     - ./backend:/app
+     - /app/node_modules
+    depends_on:
+      - db
+    command: npm run start:dev
+
+  volumes:
+    postgres_data:
